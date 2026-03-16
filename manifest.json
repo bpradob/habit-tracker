@@ -2,7 +2,7 @@
   "name": "Borja — Habit Tracker",
   "short_name": "Habits",
   "description": "Weekly habit tracker",
-  "start_url": "/",
+  "start_url": "/habit-tracker/",
   "display": "standalone",
   "background_color": "#F5F0E8",
   "theme_color": "#2A2420",
