@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Habits" />
+  <meta name="theme-color" content="#2A2420" />
+  <title>Borja — Habit Tracker</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #F5F0E8;
+      --surface: #FEFCF9;
+      --border: #EDE8E1;
+      --border-mid: #DDD8D0;
+      --text: #2A2420;
+      --text-mid: #6B5E54;
+      --text-muted: #9A8E84;
+      --text-faint: #C4BDB4;
+      --career: #C17B3F;
+      --career-bg: #FDF6EE;
+      --mind: #5C7A6B;
+      --mind-bg: #F0F5F2;
+      --body: #7A6B8A;
+      --body-bg: #F4F1F7;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; background: var(--bg); font-family: 'DM Mono', monospace; overflow: hidden; }
+
+    /* App shell */
+    #app { display: flex; flex-direction: column; height: 100%; height: 100dvh; }
+
+    /* Top bar */
+    .topbar {
+      background: #2A2420;
+      padding: calc(var(--safe-top) + 10px) 20px 10px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .topbar-left { display: flex; align-items: baseline; gap: 8px; }
+    .topbar-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: #F5F0E8; }
+    .topbar-sub { font-size: 10px; color: #6B5E54; letter-spacing: 0.1em; text-transform: uppercase; }
+    .topbar-pct { font-size: 11px; color: #C4A882; }
+
+    /* Week nav */
+    .weeknav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .weeknav-info { }
+    .weeknav-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); letter-spacing: -0.02em; line-height: 1; }
+    .weeknav-dates { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    .weeknav-btns { display: flex; gap: 6px; align-items: center; }
+    .nav-btn {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--bg); border: 1px solid var(--border-mid);
+      font-size: 16px; color: var(--text-mid); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.1s;
+    }
+    .nav-btn:active { opacity: 0.6; }
+    .today-btn {
+      font-size: 10px; padding: 0 10px; height: 32px;
+      background: var(--bg); border: 1px solid var(--border-mid);
+      border-radius: 8px; color: var(--text-muted); cursor: pointer;
+      font-family: 'DM Mono', monospace; letter-spacing: 0.04em;
+      transition: opacity 0.1s;
+    }
+    .today-btn:active { opacity: 0.6; }
+
+    /* Overall progress */
+    .overall {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+    }
+    .overall-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.06em; white-space: nowrap; }
+    .progress-track { flex: 1; height: 4px; border-radius: 2px; background: var(--border); }
+    .progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+    .overall-score { font-family: 'DM Serif Display', serif; font-size: 14px; color: var(--text); white-space: nowrap; }
+
+    /* Scroll area */
+    .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--safe-bottom) + 20px); }
+
+    /* Category block */
+    .cat-block { margin: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+
+    /* Cat header */
+    .cat-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; cursor: pointer; user-select: none;
+      transition: opacity 0.1s;
+    }
+    .cat-header:active { opacity: 0.7; }
+    .cat-header-left { display: flex; align-items: center; gap: 10px; }
+    .cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .cat-name { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--text); }
+    .cat-header-right { display: flex; align-items: center; gap: 10px; }
+    .cat-pct { font-size: 11px; font-weight: 500; }
+    .mini-bar { width: 56px; height: 3px; border-radius: 2px; background: var(--border); }
+    .mini-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+    .chevron { font-size: 10px; color: var(--text-faint); }
+
+    /* Goals strip */
+    .goals-strip {
+      padding: 8px 16px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .goal-item { font-size: 10px; color: var(--text-muted); display: flex; align-items: flex-start; gap: 5px; line-height: 1.4; }
+    .goal-arrow { flex-shrink: 0; margin-top: 1px; }
+
+    /* Habit table */
+    .habit-table { padding: 0 16px 10px; }
+
+    /* Day headers row */
+    .day-header-row {
+      display: grid;
+      align-items: end;
+      padding: 10px 0 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .day-h { text-align: center; }
+    .day-h-label { font-size: 10px; letter-spacing: 0.04em; line-height: 1.2; }
+    .day-h-num { font-size: 9px; margin-top: 1px; }
+    .habit-label-h { font-size: 9px; color: var(--text-faint); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* Habit row */
+    .habit-row {
+      display: grid;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .habit-row:last-child { border-bottom: none; }
+    .habit-name { font-size: 12px; color: var(--text); line-height: 1.3; padding-right: 8px; }
+    .cell { display: flex; align-items: center; justify-content: center; }
+
+    /* Check button */
+    .check-btn {
+      width: 28px; height: 28px; border-radius: 7px;
+      border: 1.5px solid #ccc;
+      background: transparent; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s ease; font-size: 13px;
+      -webkit-appearance: none;
+    }
+    .check-btn:active { transform: scale(0.88); }
+    .check-btn.done { border: none; }
+    .check-btn.done::after { content: '✓'; color: white; font-size: 12px; font-weight: 600; }
+    .check-btn.optional { border-style: dashed; }
+    .check-btn.optional.done { border: none; }
+
+    /* Not scheduled dot */
+    .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--border); }
+
+    /* Boundary note */
+    .boundary-note {
+      margin: 4px 0 8px;
+      padding: 7px 10px;
+      background: var(--bg);
+      border-radius: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* Week history */
+    .history { margin: 0 16px 12px; }
+    .history-title { font-size: 10px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; padding: 0 4px; }
+    .history-week {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .history-wlabel { font-family: 'DM Serif Display', serif; font-size: 14px; color: var(--text); }
+    .history-wdates { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .history-score { font-size: 12px; font-weight: 500; color: var(--text-mid); }
+    .history-bar { width: 60px; height: 3px; border-radius: 2px; background: var(--border); margin-top: 4px; }
+    .history-bar-fill { height: 100%; border-radius: 2px; background: var(--mind); }
+
+    /* Footer */
+    .footer { text-align: center; font-size: 9px; color: var(--text-faint); letter-spacing: 0.08em; padding: 8px 0 4px; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const START_DATE = new Date('2026-03-16');
+
+const CATS = [
+  {
+    id: 'career', label: 'Career', color: '#C17B3F', bg: '#FDF6EE',
+    goals: ['Land a role in tech, policy & geopolitics', 'Apply to at least 2 positions per week', 'Build Anthropic application materials']
+  },
+  {
+    id: 'mind', label: 'Mind & Faith', color: '#5C7A6B', bg: '#F0F5F2',
+    goals: ['Attend therapy weekly without exception', 'Build a consistent reading habit', 'Deepen faith through daily prayer']
+  },
+  {
+    id: 'body', label: 'Body', color: '#7A6B8A', bg: '#F4F1F7',
+    goals: ['Body recomposition: lose fat, preserve muscle', 'Hit step targets every day', 'Never skip skincare or supplements']
+  }
+];
+
+// schedule: [M,T,W,T,F,S,S] — 0=not scheduled, 1=planned, 2=optional
+const HABITS = {
+  career: [
+    { id: 'apps',    label: 'Job Applications', s: [0,1,0,1,0,0,1] },
+    { id: 'focus',   label: 'Work Focus Block', s: [1,1,1,1,1,0,0] },
+    { id: 'tech',    label: 'Tech & Policy',    s: [0,0,1,0,0,1,0] },
+  ],
+  mind: [
+    { id: 'therapy', label: 'Therapy',           s: [0,0,1,0,0,0,0] },
+    { id: 'reading', label: 'Reading',            s: [1,1,1,1,1,0,0] },
+    { id: 'journal', label: 'Journaling',         s: [1,0,0,0,0,0,0] },
+    { id: 'prayer',  label: 'Prayer / Reflection',s: [1,1,1,1,1,1,1] },
+    { id: 'lang',    label: 'Language Practice',  s: [0,1,0,0,0,0,0] },
+  ],
+  body: [
+    { id: 'workout', label: 'Workout',        s: [1,1,1,1,0,2,2] },
+    { id: 'diet',    label: 'Diet / Calories',s: [1,1,1,1,1,1,1] },
+    { id: 'steps',   label: 'Steps Goal',     s: [1,1,1,1,1,1,1] },
+    { id: 'supps',   label: 'Supplements',    s: [1,1,1,1,1,1,1] },
+    { id: 'skin',    label: 'Skincare',       s: [1,1,1,1,1,1,1] },
+    { id: 'beard',   label: 'Beard Roller',   s: [1,0,0,0,0,0,0] },
+  ]
+};
+
+const DAYS_SHORT = ['M','T','W','T','F','S','S'];
+
+// ── utils ──
+function getWeekStart(base) {
+  const d = new Date(base);
+  const day = d.getDay();
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  d.setHours(0,0,0,0);
+  return d;
+}
+function getWeekDates(off) {
+  const s = getWeekStart(new Date());
+  s.setDate(s.getDate() + off * 7);
+  return Array.from({length:7}, (_,i) => { const d = new Date(s); d.setDate(s.getDate()+i); return d; });
+}
+function weekKey(off) {
+  return 'borja-' + getWeekDates(off)[0].toISOString().slice(0,10);
+}
+function weekNum(off) {
+  const ws = getWeekStart(new Date());
+  ws.setDate(ws.getDate() + off * 7);
+  const diff = Math.round((ws - getWeekStart(START_DATE)) / (7*864e5));
+  return Math.max(1, diff + 1);
+}
+function fmt(d) { return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function loadData(key) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : {}; } catch { return {}; } }
+function saveData(key, data) { try { localStorage.setItem(key, JSON.stringify(data)); } catch {} }
+function calcStats(catId, data) {
+  let p=0,d=0;
+  HABITS[catId].forEach(h => {
+    const planned = h.s.filter(x=>x>0).length;
+    const done = ((data[catId]||{})[h.id]||[]).filter(Boolean).length;
+    p+=planned; d+=done;
+  });
+  return {p,d};
+}
+
+// ── state ──
+let offset = 0;
+let weekData = loadData(weekKey(0));
+let collapsed = {};
+const todayStr = new Date().toDateString();
+
+// ── toggle ──
+function toggle(catId, habitId, dayIdx) {
+  if (!weekData[catId]) weekData[catId] = {};
+  if (!weekData[catId][habitId]) weekData[catId][habitId] = Array(7).fill(false);
+  weekData[catId][habitId][dayIdx] = !weekData[catId][habitId][dayIdx];
+  saveData(weekKey(offset), weekData);
+  render();
+}
+function toggleCat(id) { collapsed[id] = !collapsed[id]; render(); }
+function navWeek(dir) {
+  offset += dir;
+  weekData = loadData(weekKey(offset));
+  render();
+}
+function goToday() { offset = 0; weekData = loadData(weekKey(0)); render(); }
+
+// ── render ──
+function render() {
+  const dates = getWeekDates(offset);
+  const wn = weekNum(offset);
+  let totalP=0, totalD=0;
+  CATS.forEach(c => { const s=calcStats(c.id,weekData); totalP+=s.p; totalD+=s.d; });
+  const pct = totalP===0 ? 0 : Math.round(totalD/totalP*100);
+  const barColor = pct >= 75 ? '#5C7A6B' : '#C17B3F';
+
+  // Collect past weeks
+  const pastWeeks = [];
+  for (let i = 1; i <= 8; i++) {
+    const key = weekKey(-i);
+    const d = loadData(key);
+    const hasData = Object.keys(d).length > 0;
+    if (!hasData) break;
+    let pp=0,dd=0;
+    CATS.forEach(c => { const s=calcStats(c.id,d); pp+=s.p; dd+=s.d; });
+    pastWeeks.push({ off: -i, wn: weekNum(-i), dates: getWeekDates(-i), p:pp, d:dd });
+  }
+
+  // Grid column setup: habit name + 7 day cells
+  // On mobile we use a narrower name column
+  const gridCols = '1fr repeat(7, 34px)';
+
+  let html = `
+    <div class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">Borja</span>
+        <span class="topbar-sub">Tracker</span>
+      </div>
+      <span class="topbar-pct">${pct}% this week</span>
+    </div>
+
+    <div class="weeknav">
+      <div class="weeknav-info">
+        <div class="weeknav-title">Week ${wn}${wn===1?' <span style="font-size:11px;font-family:DM Mono,monospace;color:#9A8E84;margin-left:6px;">test</span>':''}</div>
+        <div class="weeknav-dates">${fmt(dates[0])} – ${fmt(dates[6])}</div>
+      </div>
+      <div class="weeknav-btns">
+        ${offset!==0 ? `<button class="today-btn" onclick="goToday()">Today</button>` : ''}
+        <button class="nav-btn" onclick="navWeek(-1)">‹</button>
+        <button class="nav-btn" onclick="navWeek(1)">›</button>
+      </div>
+    </div>
+
+    <div class="overall">
+      <span class="overall-label">Week</span>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div>
+      <span class="overall-score">${totalD}/${totalP}</span>
+    </div>
+
+    <div class="scroll">
+  `;
+
+  CATS.forEach(cat => {
+    const {p,d} = calcStats(cat.id, weekData);
+    const cpct = p===0?0:Math.round(d/p*100);
+    const isCol = collapsed[cat.id];
+
+    html += `<div class="cat-block">
+      <div class="cat-header" style="background:${cat.bg};" onclick="toggleCat('${cat.id}')">
+        <div class="cat-header-left">
+          <div class="cat-dot" style="background:${cat.color};"></div>
+          <span class="cat-name">${cat.label}</span>
+        </div>
+        <div class="cat-header-right">
+          <span class="cat-pct" style="color:${cat.color};">${d}/${p} · ${cpct}%</span>
+          <div class="mini-bar"><div class="mini-fill" style="width:${cpct}%;background:${cat.color};"></div></div>
+          <span class="chevron">${isCol?'▸':'▾'}</span>
+        </div>
+      </div>`;
+
+    if (!isCol) {
+      html += `<div class="goals-strip" style="background:${cat.bg}88;">`;
+      cat.goals.forEach(g => {
+        html += `<div class="goal-item"><span class="goal-arrow" style="color:${cat.color};">→</span><span>${g}</span></div>`;
+      });
+      html += `</div>`;
+
+      html += `<div class="habit-table">
+        <div class="day-header-row" style="grid-template-columns:${gridCols};">
+          <div class="habit-label-h">Habit</div>`;
+      dates.forEach((d2,i) => {
+        const isToday = d2.toDateString()===todayStr;
+        html += `<div class="day-h" style="${isToday?'color:'+cat.color+';font-weight:600;':'color:var(--text-muted);'}">
+          <div class="day-h-label">${DAYS_SHORT[i]}</div>
+          <div class="day-h-num" style="color:${isToday?cat.color:'var(--text-faint)'};">${d2.getDate()}</div>
+        </div>`;
+      });
+      html += `</div>`;
+
+      HABITS[cat.id].forEach(h => {
+        const states = (weekData[cat.id]||{})[h.id] || Array(7).fill(false);
+        html += `<div class="habit-row" style="grid-template-columns:${gridCols};">
+          <div class="habit-name">${h.label}</div>`;
+        h.s.forEach((sched, i) => {
+          if (sched === 0) {
+            html += `<div class="cell"><div class="dot"></div></div>`;
+          } else {
+            const done = states[i];
+            const isOpt = sched === 2;
+            html += `<div class="cell">
+              <button class="check-btn${done?' done':''}${isOpt?' optional':''}"
+                style="${done?'background:'+cat.color+';':isOpt?'border-color:'+cat.color+'88;':'border-color:'+cat.color+'66;'}"
+                onclick="toggle('${cat.id}','${h.id}',${i})">
+              </button>
+            </div>`;
+          }
+        });
+        html += `</div>`;
+      });
+
+      if (cat.id === 'body') {
+        html += `<div class="boundary-note">
+          <span style="color:var(--body);">◦</span> Cheat meal limit — max 1 per week
+        </div>`;
+      }
+
+      html += `</div>`; // habit-table
+    }
+
+    html += `</div>`; // cat-block
+  });
+
+  // Past weeks
+  if (pastWeeks.length > 0) {
+    html += `<div class="history">
+      <div class="history-title">Past Weeks</div>`;
+    pastWeeks.forEach(w => {
+      const wpct = w.p===0?0:Math.round(w.d/w.p*100);
+      html += `<div class="history-week">
+        <div>
+          <div class="history-wlabel">Week ${w.wn}</div>
+          <div class="history-wdates">${fmt(w.dates[0])} – ${fmt(w.dates[6])}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="history-score">${w.d}/${w.p} · ${wpct}%</div>
+          <div class="history-bar"><div class="history-bar-fill" style="width:${wpct}%;"></div></div>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<div class="footer">Auto-saved · Week ${wn}</div>`;
+  html += `</div>`; // scroll
+
+  document.getElementById('app').innerHTML = html;
+}
+
+render();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
